@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockSnifferIp", "BlockSnif
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockSnifferIpApp", "BlockSnifferIpApp\BlockSnifferIpApp.csproj", "{D641FE08-7D67-4C0E-872A-8CF237F3BF7A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockSnifferIpTest", "test\BlockSnifferIpTest.csproj", "{EB1BD870-F340-4509-92D2-2FA5212957AD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockSnifferIpTest", "BlockSnifferIpTest\BlockSnifferIpTest.csproj", "{EB1BD870-F340-4509-92D2-2FA5212957AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
