@@ -1,27 +1,46 @@
-# BlockSnifferIp  
-An util for monitor which IPs are scanning / trying to hack our PC  
-  
-# Targets  
-- [x] Monitor and record who are doing port scanning  
-- [] Update windows firewall to block their IPs (manually)  
-- [] Automatically update firewall rules by match logic  
-- [] Records to cloud and apply cloud records  
-- [] Thinking...  
+# BlockSnifferIp
 
-# Directory Structure  
-- BlockSnifferIp  
-A dll to handle all program main logic.  
+An util for monitor which IPs are scanning / trying to hack our PC
+
   
-- BlockSnifferIpApp  
-One single exe to do everyting.  
+# Targets
+
+- [x] Monitor and record who are doing port scanning
+
+- [] Update windows firewall to block their IPs (manually)
+
+- [] Automatically update firewall rules by match logic
+
+- [] Records to cloud and apply cloud records
+
+- [] Thinking...
+
+
+# Directory Structure
+
+- BlockSnifferIp
+
+A dll to handle all program main logic.
+
   
-- BlockSnifferIpGui  
-Looking same as `BlockSnifferIpApp`, working with `BlockSnifferIpService` but nothing for now.  
+- BlockSnifferIpApp
+
+One single exe to do everyting.
+
   
-- BlockSnifferIpService  
-A background service. Nothing for now.   
+- BlockSnifferIpGui
+
+Looking same as `BlockSnifferIpApp`, working with `BlockSnifferIpService` but nothing for now.
+
   
-# Build  
-It is a Visual Studio project. You can easily build with default settings.  
+- BlockSnifferIpService
+
+A background service. Nothing for now.
+
+  
+# Build
+
+It is a Visual Studio project. You can easily build with default settings.
+
   
   
