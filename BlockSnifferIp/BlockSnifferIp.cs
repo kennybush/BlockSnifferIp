@@ -10,14 +10,19 @@ namespace BlockSnifferIp
 {
     public class Monitor:IDisposable
     {
-        List<Record> lNetworkRecord;
-        bool bStartCopy = false;
-        bool bIsExit = false;
-        Thread tRefreshStatus;
+        List<Record> _lNetworkRecord;
+        List<Record> _lNetworkRecordInThread;
+        int _nPort;
+        bool _bStartCopy = false;
+        bool _bIsExit = false;
+        Thread _tRefreshStatus;
+
         public Monitor(int targetPort)
         {
-            tRefreshStatus = new Thread(new ParameterizedThreadStart(RefreshStatus));
-            tRefreshStatus.Start(targetPort);
+            _nPort = targetPort;
+            _lNetworkRecordInThread = new List<Record>();
+            _tRefreshStatus = new Thread(new ParameterizedThreadStart(RefreshStatus));
+            _tRefreshStatus.Start(_nPort);
         }
 
         ~Monitor()
@@ -27,34 +32,49 @@ namespace BlockSnifferIp
 
         public void Dispose()
         {
-            bIsExit = true;
-            while (tRefreshStatus.ThreadState != ThreadState.Stopped) ;
+            _bIsExit = true;
+            while (_tRefreshStatus.ThreadState != ThreadState.Stopped) ;
         }
 
         public List<Record> GetRecord()
         {
-            bStartCopy = true;
-            while (bStartCopy)
+            _bStartCopy = true;
+            while (_bStartCopy)
                 Thread.Sleep(10);
-            return lNetworkRecord;
+            return _lNetworkRecord;
+        }
+
+        public void LoadRecord(List<Record> lRecord)
+        {
+            _bIsExit = true;
+            while (_tRefreshStatus.ThreadState != ThreadState.Stopped) ;
+            using (Stream objStream = new MemoryStream())
+            {
+                IFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(objStream, lRecord);
+                objStream.Seek(0, SeekOrigin.Begin);
+                _lNetworkRecordInThread = (List<Record>)formatter.Deserialize(objStream);
+            }
+            _bIsExit = false;
+            _tRefreshStatus = new Thread(new ParameterizedThreadStart(RefreshStatus));
+            _tRefreshStatus.Start(_nPort);
         }
 
         void RefreshStatus(object TargetPort)
         {
-            List<Record> lRecord = new List<Record>();
             List<NETRECORD> lOldNetRecord = new List<NETRECORD>();
-            while (!bIsExit)
+            while (!_bIsExit)
             {
                 List<NETRECORD> lNewNetRecord = GetNetRecord((int)TargetPort);
 
                 // compare with old record structure to find alive and count attack time
                 foreach (NETRECORD netRecord2 in lNewNetRecord)
                 {
-                    Record record = lRecord.Find((Record rec) => rec.ip == netRecord2.IP);
+                    Record record = _lNetworkRecordInThread.Find((Record rec) => rec.ip == netRecord2.IP);
                     if (record == null)
                     {
-                        lRecord.Add(new Record() { ip = netRecord2.IP, last_alive = DateTime.Now.ToLocalTime() });
-                        record = lRecord[lRecord.Count - 1];
+                        _lNetworkRecordInThread.Add(new Record() { ip = netRecord2.IP, last_alive = DateTime.Now.ToLocalTime() });
+                        record = _lNetworkRecordInThread[_lNetworkRecordInThread.Count - 1];
                     }
                     else
                         record.last_alive = DateTime.Now.ToLocalTime();
@@ -93,16 +113,16 @@ namespace BlockSnifferIp
                 // new record -> old record
                 lOldNetRecord = lNewNetRecord;
 
-                if (bStartCopy)
+                if (_bStartCopy)
                 {
                     using (Stream objStream = new MemoryStream())
                     {
                         IFormatter formatter = new BinaryFormatter();
-                        formatter.Serialize(objStream, lRecord);
+                        formatter.Serialize(objStream, _lNetworkRecordInThread);
                         objStream.Seek(0, SeekOrigin.Begin);
-                        lNetworkRecord = (List<Record>)formatter.Deserialize(objStream);
+                        _lNetworkRecord = (List<Record>)formatter.Deserialize(objStream);
                     }
-                    bStartCopy = false;
+                    _bStartCopy = false;
                 }
 
                 Thread.Sleep(50);

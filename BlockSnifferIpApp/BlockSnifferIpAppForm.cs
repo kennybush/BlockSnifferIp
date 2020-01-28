@@ -67,6 +67,44 @@ namespace BlockSnifferIpApp
             conf.Save(ConfigurationSaveMode.Modified);
         }
 
+        Record[] RecordRead(string sFilePath)
+        {
+            string json = File.ReadAllText(sFilePath);
+            ExportRecordJson jsonObj = JsonConvert.DeserializeObject<ExportRecordJson>(json);
+            return jsonObj.data;
+        }
+
+        void RecordWrite(string sFilePath)
+        {
+            ExportRecordJson jsonObj = new ExportRecordJson();
+            List<Record> lRecord = new List<Record>();
+            ListViewItem[] ltmp = new ListViewItem[lstMonitor.Items.Count];
+            lstMonitor.Items.CopyTo(ltmp, 0);
+
+            uint n;
+            foreach (ListViewItem lvi in ltmp)
+            {
+                n = 0;
+                DateTime dt = DateTime.MinValue;
+                Record r = new Record() { enabled = lvi.Checked, ip = lvi.SubItems[0].Text };
+                uint.TryParse(lvi.SubItems[1].Text, out n);
+                r.transfer = n;
+                n = 0;
+                uint.TryParse(lvi.SubItems[2].Text, out n);
+                r.alive = n;
+                n = 0;
+                DateTime.TryParse(lvi.SubItems[3].Text, out dt);
+                r.last_alive = dt;
+                uint.TryParse(lvi.SubItems[4].Text, out n);
+                r.count = n;
+                lRecord.Add(r);
+            }
+            jsonObj.data = lRecord.ToArray();
+
+            string json = JsonConvert.SerializeObject(jsonObj);
+            File.WriteAllText(sFilePath, json);
+        }
+
         public frmBlockSnifferIpApp()
         {
             InitializeComponent();
@@ -82,21 +120,12 @@ namespace BlockSnifferIpApp
                 nSortColumn = 0;
 
             // Load records
-            //string sRecord = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + "\\record.dat");
-            //try
-            //{
-            //    List<Record> jRecords = JsonConvert.DeserializeObject<List<Record>>(sRecord);
-            //    foreach (Record record in jRecords)
-            //    {
-            //        ListViewItem lvi = new ListViewItem(record.ip);
-            //        lvi.Checked = record.enabled;
-            //        lvi.SubItems.AddRange(new string[] { record.transfer.ToString(), record.alive.ToString(), record.last_alive.ToString(), record.count.ToString() });
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Logger.Log("Load record fail" + ex.Message, LogType.Error);
-            //}
+            Record[] lRecord = { };
+            try
+            {
+                lRecord = RecordRead(AppDomain.CurrentDomain.BaseDirectory + "\\record.dat");
+            }
+            catch (Exception ex) { }
 
             cHighlight = Color.FromArgb(nHighlightColor);
             txtColor.Text = cHighlight.ToArgb().ToString("X");
@@ -104,6 +133,7 @@ namespace BlockSnifferIpApp
             listViewSorter = new ListViewItemSorter(nSortColumn, (SortOrder)Enum.Parse(typeof(SortOrder), sSorting));
             lstMonitor.ListViewItemSorter = listViewSorter;
             monitor = new Monitor(nTargetPort);
+            monitor.LoadRecord(new List<Record>(lRecord));
             tRefreshTimer = new Timer() { Interval = 1000 };
             tRefreshTimer.Tick += RefreshList;
             tRefreshTimer.Start();
@@ -176,6 +206,7 @@ namespace BlockSnifferIpApp
         {
             tRefreshTimer.Stop();
             monitor.Dispose();
+            RecordWrite(AppDomain.CurrentDomain.BaseDirectory + "\\record.dat");
         }
 
         private void txtColor_Enter(object sender, EventArgs e)
@@ -203,42 +234,16 @@ namespace BlockSnifferIpApp
                 return;
             filepath = sfd.FileName;
 
+            tRefreshTimer.Stop();
             try
             {
-                ExportRecordJson jsonObj = new ExportRecordJson();
-                List<Record> lRecord = new List<Record>();
-                tRefreshTimer.Stop();
-                ListViewItem[] ltmp = new ListViewItem[lstMonitor.Items.Count];
-                lstMonitor.Items.CopyTo(ltmp, 0);
-                tRefreshTimer.Start();
-
-                uint n;
-                foreach (ListViewItem lvi in ltmp)
-                {
-                    n = 0;
-                    DateTime dt = DateTime.MinValue;
-                    Record r = new Record() { enabled = lvi.Checked, ip = lvi.SubItems[0].Text };
-                    uint.TryParse(lvi.SubItems[1].Text, out n);
-                    r.transfer = n;
-                    n = 0;
-                    uint.TryParse(lvi.SubItems[2].Text, out n);
-                    r.alive = n;
-                    n = 0;
-                    DateTime.TryParse(lvi.SubItems[3].Text, out dt);
-                    r.last_alive = dt;
-                    uint.TryParse(lvi.SubItems[4].Text, out n);
-                    r.count = n;
-                    lRecord.Add(r);
-                }
-                jsonObj.data = lRecord.ToArray();
-
-                string json = JsonConvert.SerializeObject(jsonObj);
-                File.WriteAllText(filepath, json);
+                RecordWrite(filepath);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error");
             }
+            tRefreshTimer.Start();
         }
     }
 
